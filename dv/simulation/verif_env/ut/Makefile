@@ -1,6 +1,6 @@
 export PROJ_HOME           := $(shell pwd | sed -e 's/^\(.*\)\/dv\>.*/\1/')
-export DESIGNWARE_HOME     := /common/dw_vip
-export DESIGNWARE_VIP_HOME := /common/dw_vip
+export DESIGNWARE_HOME     := /common/dw_vip_2025.03
+export DESIGNWARE_VIP_HOME := /common/vip_2025.03
 export LIGHT_ROOT          := $(shell pwd | sed -e 's/^\(.*ut\>\).*/\1/')
 
 
