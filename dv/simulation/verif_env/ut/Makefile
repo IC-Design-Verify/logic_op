@@ -2,7 +2,7 @@ export PROJ_HOME           := $(shell pwd | sed -e 's/^\(.*\)\/dv\>.*/\1/')
 export DESIGNWARE_HOME     := /common/dw_vip_2025.03
 export DESIGNWARE_VIP_HOME := /common/vip_2025.03
 export LIGHT_ROOT          := $(shell pwd | sed -e 's/^\(.*ut\>\).*/\1/')
-
+export UVM2_HOME           := $(PROJ_HOME)/logic_op/uvm2_polling
 
 all: comp so run
 
@@ -14,7 +14,9 @@ comp:
 	vcs -debug_access -full64 -sverilog -kdb \
 		-l comp.log \
 		-timescale=1ns/1ps \
-		-ntb_opts uvm-1.2 +define+UVM_PACKER_MAX_BYTES=1500000 +define+DEMO_MAKEFILE \
+		-ntb_opts uvm-ieee-2020-2.0 \
+		+define+UVM_PACKER_MAX_BYTES=1500000 +define+DEMO_MAKEFILE \
+		+define+SVT_APB_MAX_DATA_WIDTH=32 \
 		-f ./logic_op/filelist/tb.f -f ./logic_op/filelist/tc.f \
 		-f ./logic_op/filelist/rtl.f \
 		-top logic_op_tb_top -top logic_op_test

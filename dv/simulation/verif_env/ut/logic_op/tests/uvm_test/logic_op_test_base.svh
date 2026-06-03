@@ -132,6 +132,7 @@ function void logic_op_test_base::end_of_elaboration_phase(uvm_phase phase);
     if(`UVM_VERSION == 2016) uvm_top = uvm_root::get();
   `endif
   hierarchy_prt_hdl = $fopen("./hierarchy.txt", "w");
+  uvm_top = uvm_root::get();
   uvm_top.find_all("*.m_env*", comps);
   foreach(comps[i]) begin
     $fwrite(hierarchy_prt_hdl, "%s\n", comps[i].get_full_name());
@@ -160,6 +161,7 @@ function void logic_op_test_base::final_phase(uvm_phase phase);
   `endif
   printer = new();
   printer.knobs.depth=3;
+  uvm_top = uvm_root::get();
 	uvm_top.print_topology(/*printer*/);
   factory.print(0);
 	`uvm_info(get_type_name(), $sformatf("Verbosity level is set to: %d", get_report_verbosity_level()), UVM_MEDIUM)
