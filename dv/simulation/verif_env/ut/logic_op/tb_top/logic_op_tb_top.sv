@@ -67,6 +67,16 @@ module logic_op_tb_top();
   //`endif
   end
 
+  // Under the open-source simulator there is no program-block top to launch
+  // the test, so call run_test() here (resource_db above is already done).
+  // Guarded so the original VCS flow (logic_op_test program block) is unchanged.
+  `ifdef VL_RUN_TEST
+  initial begin
+    $timeformat(-9, 3, " ns", 10);
+    run_test();
+  end
+  `endif
+
   `ifdef DEMO_MAKEFILE
   initial begin
     $dumpfile("tb.vcd");

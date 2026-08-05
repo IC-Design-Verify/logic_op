@@ -1,221 +1,109 @@
 # SPDX-License-Identifier: CC0-1.0
-# Verilator Makefile for logic_op UVM TB (public_apb branch)
+# =============================================================================
+# Verilator Makefile for the logic_op UVM testbench
+# -----------------------------------------------------------------------------
+# UVM library: the official Accellera UVM shipped in ../../../../uvm-verilator/
+#   (chipsalliance/uvm-verilator, IEEE 1800.2-2020, the "UVM 1.2 for Verilator"
+#    branch), compiled *in* by Verilator -- no simulator-bundled UVM is used.
 #
-# 历史与问题:
-#   - 原始 Makefile 使用 VCS + SVT APB VIP (商业 license, /common/dw_vip)
-#   - Makefile_verilator 由用户编写, 试图用 Verilator 仿真, 编译失败
-#   - 失败原因: (1) UVM 路径写死 (/home/IC_verify/... 不存在)
-#                (2) `export VERILATOR_ROOT` 与 Verilator 5.050 的路径一致性检查冲突
-#                (3) Makefile 中 `run` `clean` 目标重定义
-#                (4) tb.f 中多个子包不 include uvm_macros.svh (VCS 自动处理; Verilator 不)
-#                (5) Accellera 官方 UVM 源使用 `process::self()`, Verilator 5.050 还不完全支持
+# Run from this directory (dv/simulation/verif_env/ut):
 #
-# 修复策略:
-#   - 使用 Verilator 官方拼接的 UVM 1.2 库 (verilator-master/test_regress/t/uvm/uvm_pkg_all_*_nodpi.svh)
-#     该拼接版已经去掉 `process::self()` 等不兼容调用, 在 Verilator 5.050 上验证可编译
-#   - 修复 export VERILATOR_ROOT 问题
-#   - 修复目标重定义
-#   - 修复 filelist 路径
-#   - 用 --vpi 兼容 + nodpi 模式 (默认, 不需 vpi_* 函数)
-#   - 用 --build-jobs 16 加速 1840+ cpp 并行编译
-#   - 整合 ccache 缓存到挂载目录
+#   make                 # verilate + build  (alias: build / uvm)
+#   make run             # run logic_op_smoke_test
+#   make run TEST=logic_op_and_test     # run a specific test
+#   make wave            # run and dump tb.vcd (+trace)
+#   make lint            # SystemVerilog elaboration check only (fast)
+#   make clean
 #
-# 使用:
-#   make uvm          # Verilate + build UVM 模型 (nodpi, 默认)
-#   make uvm-dpi      # 改用 UVM_TYPE=dpi
-#   make uvm-run      # 运行 (默认 +UVM_TESTNAME=logic_op_smoke_test)
-#   make wave         # 带波形运行
-#   make lint         # 只 lint
-#   make clean        # 清理
+# Tests verified passing: smoke / and / or / xor / nxor
+#   (each: UVM TEST PASSED, scoreboard [CHECK_PASS], 0 error / 0 fatal)
+#
+# Tool requirements: verilator (>=5.x) + verilator_coverage + g++/clang + make.
+# No native toolchain?  Run it inside the official image:
+#   docker run --rm --entrypoint bash \
+#       -v "$REPO_ROOT":/work -w /work/dv/simulation/verif_env/ut \
+#       -v "$REPO_ROOT/.ccache":/root/.ccache verilator/verilator:latest make run
+# =============================================================================
 
-export PROJ_HOME           := $(shell pwd | sed -e 's/^\(.*\)\/dv\>.*/\1/')
-export LIGHT_ROOT          := $(shell pwd | sed -e 's/^\(.*ut\>\).*/\1/')
+# ---- Paths -------------------------------------------------------------------
+# Repo root = the .../dv parent; UVM source lives at <repo>/uvm-verilator.
+export PROJ_HOME  := $(shell pwd | sed -e 's/^\(.*\)\/dv\>.*/\1/')
+export LIGHT_ROOT := $(shell pwd | sed -e 's/^\(.*ut\>\).*/\1/')
 
-TOP         = logic_op_tb_top
-DUT_C       = $(LIGHT_ROOT)/logic_op/env/reference_model/logic_op_dpi.c
+TOP      := logic_op_tb_top
+OBJ_DIR  := obj_dir
+EXE      := $(OBJ_DIR)/V$(TOP)
 
-# ------- UVM 1.2 源选择 -------
-# Verilator 5.050 还不完全支持 SV process 类; Accellera 官方 UVM 用 process::self() 无法直接编译.
-# 使用 Verilator 官方拼接的 UVM 1.2 库 (已去除 process::self, 适配 Verilator 5.050).
-#   - nodpi: 纯 SV, 编译最快, 适合本项目 (logic_op_dpi.c 只用 svdpi.h 而非 vpi_*)
-#   - dpi  : 含完整 vpi_* 支持, 需 --vpi + 链接 DPI C, 适合需要 VPI callbacks 的项目
-UVM_PATCHED_DIR = $(PROJ_HOME)/uvm-verilator-patched
-UVM_TYPE ?= nodpi
-ifeq ($(UVM_TYPE),dpi)
-  UVM_SRC       = $(UVM_PATCHED_DIR)/uvm_pkg_all_v2017_1_0_dpi.svh
-  UVM_DPI_FILE  = $(UVM_PATCHED_DIR)/v2017_1_0/dpi/uvm_dpi.cc
-  UVM_DPI_CFLAGS = -I$(UVM_PATCHED_DIR)/v2017_1_0/dpi
-  NEED_VPI      = 1
-else
-  UVM_SRC       = $(UVM_PATCHED_DIR)/uvm_pkg_all_v2017_1_0_nodpi.svh
-  UVM_DPI_FILE  =
-  UVM_DPI_CFLAGS =
-  NEED_VPI      = 0
-endif
+UVM_DIR  := $(PROJ_HOME)/uvm-verilator
+UVM_SRC  := $(UVM_DIR)/src
+UVM_DPI  := $(UVM_SRC)/dpi/uvm_dpi.cc          # UVM's own DPI/VPI implementation
+DPI_CPP  := $(LIGHT_ROOT)/logic_op/env/reference_model/logic_op_dpi.cpp  # DUT ref-model DPI
 
-# ------- Verilator 路径自动检测 -------
-# 5.050 严格校验 VERILATOR_ROOT 路径, 不在 Makefile 中 export
-VERILATOR ?= $(shell which verilator 2>/dev/null || echo /usr/local/bin/verilator)
-VERILATOR_COVERAGE ?= $(shell which verilator_coverage 2>/dev/null || echo /usr/local/bin/verilator_coverage)
-# 5.050 检测脚本: VERILATOR_ROOT 必须 unset 或与二进制位置一致, 由 verilator --getenv 自动推断
-VERILATOR_ROOT := $(shell $(VERILATOR) --getenv VERILATOR_ROOT 2>/dev/null)
-export VERILATOR_ROOT
+# Verilator build filelist (UVM source + RTL + packages + tb_top, in dep order;
+# deliberately excludes the VCS `logic_op_test` program block -- run_test() is
+# launched from logic_op_tb_top under the -DVL_RUN_TEST guard instead).
+FILELIST := filelist_vlt.f
 
-# ccache 跨容器复用 (挂载到 PROJ_HOME/.ccache)
-CCACHE_DIR ?= $(PROJ_HOME)/.ccache
-export CCACHE_DIR
+# ---- Tools -------------------------------------------------------------------
+VERILATOR          ?= verilator
+VERILATOR_COVERAGE ?= verilator_coverage
 
-# ------- 输入源: 工程内 filelist -------
-FILELIST ?= -f $(PROJ_HOME)/dv/simulation/verif_env/ut/logic_op/filelist/tb.f \
-            -f $(PROJ_HOME)/dv/simulation/verif_env/ut/logic_op/filelist/tc.f \
-            -f $(PROJ_HOME)/dv/simulation/verif_env/ut/logic_op/filelist/rtl.f
-ifneq ($(FILELIST),)
-  VERILATOR_INPUT = $(FILELIST)
-else
-  VERILATOR_INPUT = $(SOURCES)
-endif
+TEST   ?= logic_op_smoke_test
+EXTRA  ?=
+STDBUF ?= stdbuf -oL
 
-# ------- Verilator 选项 -------
-# --binary = --main --exe --build --timing (Verilator 自动生成 C++ main)
-# --vpi  : UVM DPI 需要 (UCM_DPI_FILE 内 uvm_common.c 等含 vpi_* 调用)
-#         nodpi 模式不传 UVM_DPI_FILE 时仍可能需要 vpi shim, 故始终加 --vpi
-# -j 16  : 1840+ cpp 并行编译
-# +define+UVM_PACKER_MAX_BYTES=1500000: 兼容原 VCS Makefile 的宏定义
-# +define+DEMO_MAKEFILE: 兼容原 VCS Makefile 的宏定义
-# +incdir+: 让 tb.f/tc.f 中 svh 包含能正常解析
-VERILATOR_FLAGS = --binary -j 16 --Mdir obj_dir \
-  --trace-vcd --trace-depth 3 --assert --coverage \
-  -x-assign fast -Wall -Wno-fatal -Wno-ENCAPSULATED \
-  --top-module $(TOP) \
-  --vpi \
-  +define+UVM_PACKER_MAX_BYTES=1500000 \
-  +define+DEMO_MAKEFILE \
-  +incdir+$(UVM_PATCHED_DIR) \
-  +incdir+$(UVM_PATCHED_DIR)/v2017_1_0/dpi
+# ---- Flags (shared by build & lint) -----------------------------------------
+#   -DVL_RUN_TEST            : logic_op_tb_top calls run_test() (no program top)
+#   -DDEMO_MAKEFILE          : enable $dumpfile/$dumpvars in tb_top
+#   -DUVM_PACKER_MAX_BYTES   : match the original VCS Makefile define
+BASE_FLAGS  = --Mdir $(OBJ_DIR) --top-module $(TOP) --timescale 1ns/1ps
+BASE_FLAGS += -Wall -Wno-fatal
+BASE_FLAGS += -DVL_RUN_TEST -DDEMO_MAKEFILE -DUVM_PACKER_MAX_BYTES=1500000
+BASE_FLAGS += -f $(FILELIST)
 
-# 允许命令行追加: make EXTRA="--trace-fst"
-EXTRA ?=
+# --binary = --main --exe --build --timing (auto C++ main + timing for phases)
+BUILD_FLAGS  = --binary -j 16 --vpi --trace-vcd --trace-depth 5
 
-# C++ 编译参数: Verilator 自动加 -DVM_* 宏, 我们用 CFLAGS 注入 -D/-I 给 .c/.cpp
-#   -I$(UVM_PATCHED_DIR)/v2017_1_0/dpi: 链接 uvm_dpi.cc 时找 svdpi.h
-#   -DDPI_HDR_NAME=...: 顶层 DPI 头自动生成名, 由本项目传入 dpi/dpi_helpers.cpp
-#   Verilator 命令行的 -DDPI_HDR_NAME 仅对 SV 有效, 需用 -CFLAGS 传给 C++
-UVILATOR_CFLAGS = $(UVM_DPI_CFLAGS) -DDPI_HDR_NAME='"V$(TOP)__Dpi.h"'
+# ---- Targets ----------------------------------------------------------------
+.PHONY: all build uvm run uvm-run wave uvm-wave lint clean uvm-clean help
 
-# ------- 目标 -------
-.PHONY: all build run wave coverage lint clean uvm uvm-dpi uvm-run uvm-wave uvm-clean \
-        so dpi dpi-run dpi-clean help
-
-default: help
+all: build
 
 help:
-	@echo "Verilator Makefile for logic_op UVM TB (public_apb branch)"
-	@echo ""
-	@echo "Verilator: $(VERILATOR)"
-	@echo "VERILATOR_ROOT: $(VERILATOR_ROOT)"
-	@echo "UVM 源目录: $(UVM_PATCHED_DIR)"
-	@echo "UVM_TYPE: $(UVM_TYPE)"
-	@echo ""
-	@echo "Usage:"
-	@echo "  make uvm         # Verilate + build UVM 模型 ($(UVM_TYPE) 模式)"
-	@echo "  make uvm-dpi     # 同上, 改用 DPI 模式 (UVM_TYPE=dpi)"
-	@echo "  make uvm-run     # 运行 UVM 仿真 (默认 +UVM_TESTNAME=logic_op_smoke_test)"
-	@echo "  make wave        # 带波形运行"
-	@echo "  make so          # 预编译 logic_op_dpi.so (VCS 风格, 可选)"
-	@echo "  make lint        # 只 lint"
-	@echo "  make clean       # 清理"
-	@echo ""
+	@echo "logic_op UVM TB on Verilator  (UVM = uvm-verilator/, chipsalliance 1800.2)"
+	@echo "  make                       build (verilate + compile)"
+	@echo "  make run [TEST=name]       run a test (default: $(TEST))"
+	@echo "  make wave [TEST=name]      run with +trace -> tb.vcd"
+	@echo "  make lint                  SystemVerilog elaboration check"
+	@echo "  make clean"
+	@echo "  UVM source : $(UVM_DIR)"
+	@echo "  Filelist   : $(FILELIST)"
+	@echo "  Pass-through: make EXTRA='--trace-fst'  (or any verilator options)"
 
-# ------- UVM 目标 -------
-UVM_SRCS = $(UVM_SRC) $(DUT_C) $(UVM_DPI_FILE)
-uvm uvm-dpi:
-	@if [ ! -f "$(UVM_SRC)" ]; then \
-	  echo "ERROR: UVM 源 $(UVM_SRC) 不存在"; \
-	  echo "  期望目录: $(UVM_PATCHED_DIR)"; \
-	  echo "  缺失文件: uvm-verilator-patched/ 目录未创建或 .svh 文件未复制"; \
-	  exit 1; \
-	fi
-	@mkdir -p logs
+build uvm:
+	@mkdir -p logs out
+	@echo "-- VERILATE + BUILD (Accellera UVM via uvm-verilator/, top=$(TOP)) --"
+	@bash -c 'set -o pipefail; \
+	  $(VERILATOR) $(BUILD_FLAGS) $(BASE_FLAGS) $(DPI_CPP) $(UVM_DPI) $(EXTRA) \
+	    2>&1 | tee logs/uvm_build.log'
 	@echo
-	@echo "-- VERILATE + BUILD (UVM 1.2, $(UVM_TYPE) 模式) --"
-	@bash -c 'set -o pipefail; $(VERILATOR) $(VERILATOR_FLAGS) -CFLAGS "$(UVILATOR_CFLAGS)" $(EXTRA) $(UVM_SRCS) $(VERILATOR_INPUT) 2>&1 | tee logs/uvm_build.log'
-	@echo
-	@echo "-- DONE --------------------------------"
-	@echo "UVM 可执行: obj_dir/V$(TOP)"
-	@echo "运行仿真:   make uvm-run"
-	@echo
+	@echo "Executable: $(EXE)"
+	@echo "Run:        make run   (TEST=$(TEST))"
 
-uvm-run: uvm
-	@mkdir -p logs
-	# 使用 stdbuf -oL 实现行缓冲, 避免 Verilator/C++ stdout 全缓冲导致看不到实时输出
-	stdbuf -oL obj_dir/V$(TOP) +UVM_TESTNAME=logic_op_smoke_test
+run uvm-run: build
+	@mkdir -p logs out
+	$(STDBUF) $(EXE) +UVM_TESTNAME=$(TEST) 2>&1 | tee logs/uvm_run.log
 
-uvm-wave: uvm
-	@mkdir -p logs
-	stdbuf -oL obj_dir/V$(TOP) +UVM_TESTNAME=logic_op_smoke_test +trace
-	@echo "波形: logs/vlt_dump.vcd"
+wave uvm-wave: build
+	@mkdir -p logs out
+	$(STDBUF) $(EXE) +UVM_TESTNAME=$(TEST) +trace 2>&1 | tee logs/uvm_run.log
+	@echo "Waveform: tb.vcd"
 
-uvm-clean:
-	-rm -rf obj_dir logs/uvm_build.log
-
-# ------- 预编译 DPI .so (VCS 风格, 可选) -------
-so: $(DUT_C)
-	@echo "-- Build logic_op_dpi.so --"
-	@if [ -z "$(VERILATOR_ROOT)" ]; then \
-	  echo "ERROR: VERILATOR_ROOT 未设置, 无法找到 svdpi.h"; \
-	  exit 1; \
-	fi
-	gcc -Wall -m64 -g -fPIC -I$(VERILATOR_ROOT)/include \
-		-shared -o logic_op_dpi.so $(DUT_C)
-	@echo "DONE: logic_op_dpi.so"
-
-# ------- 默认 build (RTL only, 不带 UVM) -------
-build:
-	@echo "-- VERILATE + BUILD (RTL only) --"
-	@bash -c 'set -o pipefail; $(VERILATOR) $(VERILATOR_FLAGS) $(EXTRA) $(VERILATOR_INPUT) 2>&1 | tee logs/build.log'
-	@echo "DONE: obj_dir/V$(TOP)"
-
-# ------- DPI 目标 (单独验证 DPI 链接) -------
-DPI_TARGET_FLAGS = --binary -j 16 --Mdir obj_dir_dpi \
-  --trace-vcd --trace-depth 3 --assert --coverage \
-  -x-assign fast -Wall -Wno-fatal -Wno-ENCAPSULATED \
-  --top-module $(TOP) --vpi
-dpi:
-	@echo "-- VERILATE + BUILD (DPI) --"
-	@bash -c 'set -o pipefail; $(VERILATOR) $(DPI_TARGET_FLAGS) -CFLAGS "$(UVILATOR_CFLAGS)" $(EXTRA) $(VERILATOR_INPUT) $(UVM_SRCS) 2>&1 | tee logs/dpi_build.log'
-
-dpi-run: dpi
-	@mkdir -p logs
-	obj_dir_dpi/V$(TOP)
-
-dpi-clean:
-	-rm -rf obj_dir_dpi logs/dpi_build.log
-
-# ------- 运行与覆盖率 -------
-run: uvm
-	@mkdir -p logs
-	stdbuf -oL obj_dir/V$(TOP) +UVM_TESTNAME=logic_op_smoke_test
-
-wave: uvm
-	@mkdir -p logs
-	stdbuf -oL obj_dir/V$(TOP) +UVM_TESTNAME=logic_op_smoke_test +trace
-	@echo "波形: logs/vlt_dump.vcd"
-
-coverage: uvm-run
-	@rm -rf logs/annotated
-	$(VERILATOR_COVERAGE) --annotate logs/annotated coverage.dat
-	@echo "覆盖率报告: logs/annotated/"
-
+# Fast SV-only elaboration check (no C++ build).
 lint:
-	@bash -c '$(VERILATOR) --lint-only -Wall -Wno-ENCAPSULATED --top-module $(TOP) $(VERILATOR_INPUT) 2>&1 | tee logs/lint.log'
+	@mkdir -p logs
+	@bash -c 'set -o pipefail; \
+	  $(VERILATOR) --lint-only $(BASE_FLAGS) $(EXTRA) 2>&1 | tee logs/lint.log'
 
-clean:
-	-rm -rf obj_dir obj_dir_dpi logs *.log coverage.dat *.dmp *.vpd core
-
-clean_all: clean
-	-rm -rf logic_op_dpi.so
-
-# ------- 构建目录保护 -------
-ifneq ($(words $(CURDIR)),1)
-  $(error Unsupported: GNU Make cannot build in directories containing spaces, build elsewhere: '$(CURDIR)')
-endif
+clean uvm-clean:
+	-rm -rf $(OBJ_DIR) logs/uvm_build.log logs/uvm_run.log logs/lint.log tb.vcd hierarchy.txt out

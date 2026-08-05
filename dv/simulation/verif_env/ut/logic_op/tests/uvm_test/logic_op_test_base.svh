@@ -129,7 +129,7 @@ function void logic_op_test_base::end_of_elaboration_phase(uvm_phase phase);
   `endif
   super.end_of_elaboration_phase(phase);
   `ifdef UVM_VERSION
-    if(`UVM_VERSION == 2016) uvm_top = uvm_root::get();
+    uvm_top = uvm_root::get();
   `endif
   hierarchy_prt_hdl = $fopen("./hierarchy.txt", "w");
   uvm_top.find_all("*.m_env*", comps);
@@ -156,7 +156,7 @@ function void logic_op_test_base::final_phase(uvm_phase phase);
 	super.final_phase(phase);
 	`uvm_info("TRACE", $sformatf("%m"), UVM_HIGH)
   `ifdef UVM_VERSION
-  if(`UVM_VERSION == 2016) uvm_top = uvm_root::get();
+  uvm_top = uvm_root::get();
   `endif
   printer = new();
   printer.knobs.depth=3;

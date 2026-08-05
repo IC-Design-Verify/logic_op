@@ -185,6 +185,13 @@ function void logic_op_env::connect_phase(uvm_phase phase);
   if(env_cfg.has_logic_op_vseqr && env_cfg.has_apb_agt == 1) begin
     logic_op_vseqr.apb_seqr = apb_env.seqr;
   end
+
+  // Register model frontdoor access routes through the APB agent (sequencer +
+  // reg2apb adapter). Without this, uvm_reg frontdoor writes/reads have no bus
+  // sequencer and abort with "sequence_item has null sequencer".
+  if(env_cfg.has_apb_agt == 1) begin
+    rgm.map.set_sequencer(apb_env.seqr, reg2apb);
+  end
   if(env_cfg.has_logic_op_vseqr && env_cfg.has_output_agt == 1 && env_cfg.output_agt_cfg.active == UVM_ACTIVE) begin
     logic_op_vseqr.output_seqr = output_agt.seqr;
   end
