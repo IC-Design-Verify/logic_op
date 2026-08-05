@@ -69,8 +69,8 @@ module logic_op_tb_top();
 
   `ifdef DEMO_MAKEFILE
   initial begin
-    $fsdbDumpfile("tb.fsdb");
-    $fsdbDumpvars("+all");
+    $dumpfile("tb.vcd");
+    $dumpvars(0, logic_op_tb_top);
   end
   `endif
 
