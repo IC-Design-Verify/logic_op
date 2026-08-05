@@ -2,7 +2,9 @@
 `define LOGIC_OP_TEST__SV
 program automatic logic_op_test;
   import uvm_pkg::*;
-	`include "uvm_macros.svh"
+  `ifndef UVM_VERSION
+	  `include "uvm_macros.svh"
+  `endif
 
   import logic_op_testcase_pkg::*;
 	initial begin

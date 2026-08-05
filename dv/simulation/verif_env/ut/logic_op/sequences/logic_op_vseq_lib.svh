@@ -70,7 +70,11 @@ class logic_op_smoke_vseq extends logic_op_vseq_base;
   task body();
     //`uvm_do(reg_seq)
 
-    `uvm_do_on(input_seq, p_sequencer.input_seqr)
+    `ifndef UVM_VERSION
+      `uvm_do_on(input_seq, p_sequencer.input_seqr)
+    `else
+      `uvm_do(input_seq, p_sequencer.input_seqr)
+    `endif
   endtask
 endclass: logic_op_smoke_vseq
 
@@ -90,7 +94,11 @@ class logic_op_and_vseq extends logic_op_vseq_base;
   task body();
     `uvm_do(reg_seq)
 
-    `uvm_do_on(input_seq, p_sequencer.input_seqr)
+    `ifndef UVM_VERSION
+      `uvm_do_on(input_seq, p_sequencer.input_seqr)
+    `else
+      `uvm_do(input_seq, p_sequencer.input_seqr)
+    `endif
   endtask
 endclass: logic_op_and_vseq
 
@@ -107,7 +115,11 @@ class logic_op_or_vseq extends logic_op_vseq_base;
   task body();
     `uvm_do(reg_seq)
 
-    `uvm_do_on(input_seq, p_sequencer.input_seqr)
+    `ifndef UVM_VERSION
+      `uvm_do_on(input_seq, p_sequencer.input_seqr)
+    `else
+      `uvm_do(input_seq, p_sequencer.input_seqr)
+    `endif
   endtask
 endclass: logic_op_or_vseq
 
@@ -124,7 +136,11 @@ class logic_op_nxor_vseq extends logic_op_vseq_base;
   task body();
     `uvm_do(reg_seq)
 
-    `uvm_do_on(input_seq, p_sequencer.input_seqr)
+    `ifndef UVM_VERSION
+      `uvm_do_on(input_seq, p_sequencer.input_seqr)
+    `else
+      `uvm_do(input_seq, p_sequencer.input_seqr)
+    `endif
   endtask
 endclass: logic_op_nxor_vseq
 
@@ -141,7 +157,11 @@ class logic_op_xor_vseq extends logic_op_vseq_base;
   task body();
     `uvm_do(reg_seq)
 
-    `uvm_do_on(input_seq, p_sequencer.input_seqr)
+    `ifndef UVM_VERSION
+      `uvm_do_on(input_seq, p_sequencer.input_seqr)
+    `else
+      `uvm_do(input_seq, p_sequencer.input_seqr)
+    `endif
   endtask
 endclass: logic_op_xor_vseq
 

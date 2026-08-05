@@ -42,7 +42,8 @@ class logic_op_env_config extends uvm_object;
 
   //add agent config
   op_in_agent_config  input_agt_cfg;
-  apb_shared_cfg apb_cfg;
+  //apb_shared_cfg apb_cfg;
+  apb_agent_config apb_cfg;
   op_out_agent_config  output_agt_cfg;
 
   //register model
@@ -65,7 +66,8 @@ function logic_op_env_config::new(string name="logic_op_env_config");
 
   //create agent config
   input_agt_cfg = op_in_agent_config::type_id::create("input_agt_cfg");
-  apb_cfg = apb_shared_cfg::type_id::create("apb_cfg");
+  //apb_cfg = apb_shared_cfg::type_id::create("apb_cfg");
+  apb_cfg = apb_agent_config::type_id::create("apb_cfg");
   output_agt_cfg = op_out_agent_config::type_id::create("output_agt_cfg");
         
 endfunction: new
@@ -74,6 +76,9 @@ function logic_op_env_config::config_env(string name="LOGIC_OP");
   `uvm_info("CONFIG_ENV", "Starting config Environment", UVM_MEDIUM)
 
   //Get Interface To Agent Config
+  if(!uvm_resource_db #(virtual apb_if)::read_by_name("interface_pool", {name, "_apb_if"}, apb_cfg.APB)) begin
+    `uvm_fatal("VIF_NOT_FOUND", {"Fail to get ", name, "_input_if from resource_db: interface_pool"})
+  end
   if(!uvm_resource_db #(virtual op_in_if)::read_by_name("interface_pool", {name, "_input_if"}, input_agt_cfg.vif)) begin
     `uvm_fatal("VIF_NOT_FOUND", {"Fail to get ", name, "_input_if from resource_db: interface_pool"})
   end
@@ -109,10 +114,15 @@ function logic_op_env_config::config_env(string name="LOGIC_OP");
 endfunction
 
 // vip function here -->
+//function logic_op_env_config::config_apb();
+//  apb_cfg.master_cfg.uvm_reg_enable = 1;
+//  apb_cfg.master_cfg.apb4_enable = 0;
+//  apb_cfg.master_cfg.apb3_enable = 0;
+//
+//endfunction
 function logic_op_env_config::config_apb();
-  apb_cfg.master_cfg.uvm_reg_enable = 1;
-  apb_cfg.master_cfg.apb4_enable = 0;
-  apb_cfg.master_cfg.apb3_enable = 0;
+  apb_cfg.start_address[0] = 32'h00000000;
+  apb_cfg.range[0] = 32'hffffffff;
 
 endfunction
 `endif

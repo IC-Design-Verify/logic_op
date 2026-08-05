@@ -64,11 +64,11 @@ function void apb_agent::build_phase(uvm_phase phase);
   else
     uvm_config_db #(apb_agent_config)::set(this, "*", "apb_agent_config", m_cfg);
 
-	uvm_config_db#(virtual apb_if)::get(this, "", "apb_if", vif);
-	if(vif == null) begin
+	//uvm_config_db#(virtual apb_if)::get(this, "", "apb_if", vif);
+	if(m_cfg.APB == null) begin
 		`uvm_fatal("CFGERR",$sformatf("Interface for Agent not set"))
 	end
-  m_cfg.APB = vif;
+  vif = m_cfg.APB;
   // Monitor is always present
   mon = apb_monitor::type_id::create("mon", this);
   // Only build the driver and sequencer if active

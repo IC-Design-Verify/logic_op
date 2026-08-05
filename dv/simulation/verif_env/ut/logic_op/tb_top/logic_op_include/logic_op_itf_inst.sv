@@ -7,9 +7,10 @@ reset_if #(100) `MERGE_ITF_NAME(`LOGIC_OP_ITF_PRE_NAME, apb_rst)(.clk(`MERGE_ITF
 
 //interface
 op_in_if `MERGE_ITF_NAME(`LOGIC_OP_ITF_PRE_NAME, input_vif) (.clk(`MERGE_ITF_NAME(`LOGIC_OP_ITF_PRE_NAME, sys_clk.CLOCK)), .rst_n(`MERGE_ITF_NAME(`LOGIC_OP_ITF_PRE_NAME, sys_rst.RESET)));
-svt_apb_if  `MERGE_ITF_NAME(`LOGIC_OP_ITF_PRE_NAME, apb_master_vif) ();
-svt_apb_if  `MERGE_ITF_NAME(`LOGIC_OP_ITF_PRE_NAME, apb_slave_vif)  ();
+//svt_apb_if  `MERGE_ITF_NAME(`LOGIC_OP_ITF_PRE_NAME, apb_master_vif) ();
+//svt_apb_if  `MERGE_ITF_NAME(`LOGIC_OP_ITF_PRE_NAME, apb_slave_vif)  ();
 op_out_if `MERGE_ITF_NAME(`LOGIC_OP_ITF_PRE_NAME, output_vif) (.clk(`MERGE_ITF_NAME(`LOGIC_OP_ITF_PRE_NAME, sys_clk.CLOCK)), .rst_n(`MERGE_ITF_NAME(`LOGIC_OP_ITF_PRE_NAME, sys_rst.RESET)));
+apb_if `MERGE_ITF_NAME(`LOGIC_OP_ITF_PRE_NAME, apb_vif) ();
   
 
 // Sub Environment Interface Instance

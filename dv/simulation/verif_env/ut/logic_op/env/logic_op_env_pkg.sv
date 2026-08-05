@@ -5,9 +5,10 @@ package logic_op_env_pkg;
 
   //agent package
   import op_in_agent_pkg::*;;
-  import svt_uvm_pkg::*;;
-  import svt_apb_uvm_pkg::*;;
-  import apb_env_pkg::*;;
+  //import svt_uvm_pkg::*;;
+  //import svt_apb_uvm_pkg::*;;
+  //import apb_env_pkg::*;;
+  import apb_agent_pkg::*;
   import op_out_agent_pkg::*;;
 
   

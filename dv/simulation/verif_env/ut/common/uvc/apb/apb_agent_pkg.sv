@@ -16,21 +16,31 @@
 //   the License for the specific language governing
 //   permissions and limitations under the License.
 //------------------------------------------------------------
+`ifndef APB_AGENT_PACKAGE__SV
+`define APB_AGENT_PACKAGE__SV
 package apb_agent_pkg;
 
-import uvm_pkg::*;
-`include "uvm_macros.svh"
-
-`include "apb_seq_item.svh"
-`include "apb_agent_config.svh"
-`include "apb_driver.svh"
-`include "apb_coverage_monitor.svh"
-`include "apb_monitor.svh"
-`include "apb_sequencer.svh"
-`include "apb_agent.svh"
-
-// Utility Sequences
-`include "apb_seq.svh"
-`include "reg2apb_adapter.svh"
+  import uvm_pkg::*;
+  `ifndef UVM_VERSION
+    `include "uvm_macros.svh"
+  `endif
+  
+  `include "apb_seq_item.svh"
+  `include "apb_agent_config.svh"
+  `include "apb_driver.svh"
+  `include "apb_coverage_monitor.svh"
+  `include "apb_monitor.svh"
+  `include "apb_sequencer.svh"
+  `include "apb_agent.svh"
+  
+  // Utility Sequences
+  `include "apb_seq_lib.svh"
+  `include "reg2apb_adapter.svh"
 
 endpackage: apb_agent_pkg
+
+
+`include "apb_if.sv"
+
+
+`endif

@@ -16,7 +16,8 @@ class logic_op_vsequencer extends uvm_sequencer;
   //------------------------------------------
   //agent seqr
   op_in_sequencer  input_seqr;
-  svt_apb_system_sequencer apb_seqr;
+  //svt_apb_system_sequencer apb_seqr;
+  apb_sequencer apb_seqr;
   op_out_sequencer  output_seqr;
 
   //sub_env v_seqr

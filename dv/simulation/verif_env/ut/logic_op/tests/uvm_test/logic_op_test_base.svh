@@ -83,8 +83,8 @@ class logic_op_test_base extends uvm_test;
   
 
     //Set vip sequence
-		uvm_config_db#(uvm_object_wrapper)::set(this, "m_env.apb_env.apb_slave_env.slave*.sequencer.run_phase", "default_sequence", svt_apb_slave_memory_sequence::type_id::get());
-		uvm_config_db#(uvm_object_wrapper)::set(this, "m_env.apb_env.apb_master_env.sequencer.main_phase", "default_sequence", null/*svt_apb_slave_memory_sequence::type_id::get()*/);
+		//uvm_config_db#(uvm_object_wrapper)::set(this, "m_env.apb_env.apb_slave_env.slave*.sequencer.run_phase", "default_sequence", svt_apb_slave_memory_sequence::type_id::get());
+		//uvm_config_db#(uvm_object_wrapper)::set(this, "m_env.apb_env.apb_master_env.sequencer.main_phase", "default_sequence", null/*svt_apb_slave_memory_sequence::type_id::get()*/);
 
     //Set memory
   

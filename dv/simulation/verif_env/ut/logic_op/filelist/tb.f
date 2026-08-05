@@ -5,12 +5,13 @@ $PROJ_HOME/dv/simulation/verif_env/ut/logic_op/tb_top/logic_op_env_define.sv
 //uvc directory
 +incdir+$PROJ_HOME/dv/simulation/verif_env/ut/commom/uvc
 +incdir+$PROJ_HOME/dv/simulation/verif_env/ut/common/uvc/op_in
-+incdir+$DESIGNWARE_VIP_HOME/src/sverilog/vcs
-+incdir+$DESIGNWARE_VIP_HOME/include/sverilog
-+incdir+$DESIGNWARE_VIP_HOME/src/verilog/vcs
-+incdir+$DESIGNWARE_VIP_HOME/include/verilog
-+incdir+$PROJ_HOME/dv/simulation/verif_env/ut/common/uvc/svt_apb/env
+//+incdir+$DESIGNWARE_VIP_HOME/src/sverilog/vcs
+//+incdir+$DESIGNWARE_VIP_HOME/include/sverilog
+//+incdir+$DESIGNWARE_VIP_HOME/src/verilog/vcs
+//+incdir+$DESIGNWARE_VIP_HOME/include/verilog
+//+incdir+$PROJ_HOME/dv/simulation/verif_env/ut/common/uvc/svt_apb/env
 +incdir+$PROJ_HOME/dv/simulation/verif_env/ut/common/uvc/op_out
++incdir+$PROJ_HOME/dv/simulation/verif_env/ut/common/uvc/apb
 
 //////////////////////////////
 //rtl_model directory
@@ -43,9 +44,10 @@ $PROJ_HOME/dv/simulation/verif_env/ut/common/uvc/reset_if.sv
 //agent package
 +incdir+$PROJ_HOME/dv/simulation/verif_env/ut/common/uvc
 $PROJ_HOME/dv/simulation/verif_env/ut/common/uvc/op_in/op_in_agent_pkg.sv
-$DESIGNWARE_VIP_HOME/include/sverilog/svt_apb.uvm.pkg
-$PROJ_HOME/dv/simulation/verif_env/ut/common/uvc/svt_apb/env/apb_env_pkg.sv
+//$DESIGNWARE_VIP_HOME/include/sverilog/svt_apb.uvm.pkg
+//$PROJ_HOME/dv/simulation/verif_env/ut/common/uvc/svt_apb/env/apb_env_pkg.sv
 $PROJ_HOME/dv/simulation/verif_env/ut/common/uvc/op_out/op_out_agent_pkg.sv
+$PROJ_HOME/dv/simulation/verif_env/ut/common/uvc/apb/apb_agent_pkg.sv
 
 //////////////////////////////
 //sub_env package begin

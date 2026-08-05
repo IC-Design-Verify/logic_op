@@ -5,8 +5,8 @@
 module logic_op_tb_top();
   import uvm_pkg::*;
   // import package
-  import svt_uvm_pkg::*;    
-  import svt_apb_uvm_pkg::*;    
+  //import svt_uvm_pkg::*;    
+  //import svt_apb_uvm_pkg::*;    
 
          
   //type_width

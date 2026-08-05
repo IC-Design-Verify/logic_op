@@ -108,12 +108,16 @@ function string apb_seq_item::convert2string();
 endfunction:convert2string
 
 function void apb_seq_item::do_print(uvm_printer printer);
-  if(printer.knobs.sprint == 0) begin
-    $display(convert2string());
-  end
-  else begin
+  `ifndef UVM_VERSION
+    if(printer.knobs.sprint == 0) begin
+      $display(convert2string());
+    end
+    else begin
+      printer.m_string = convert2string();
+    end
+  `else
     printer.m_string = convert2string();
-  end
+  `endif
 endfunction:do_print
 
 function void apb_seq_item:: do_record(uvm_recorder recorder);

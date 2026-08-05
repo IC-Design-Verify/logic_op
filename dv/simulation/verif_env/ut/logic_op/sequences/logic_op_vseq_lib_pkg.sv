@@ -4,13 +4,14 @@ package logic_op_vseq_lib_pkg;
   import uvm_pkg::*;
 
   //vip package
-  import svt_uvm_pkg::*;    
-  import svt_apb_uvm_pkg::*;    
-	import apb_env_pkg::*;
+  //import svt_uvm_pkg::*;    
+  //import svt_apb_uvm_pkg::*;    
+	//import apb_env_pkg::*;
 
   //agent package
   import op_in_agent_pkg::*;
   import op_out_agent_pkg::*;
+  import apb_agent_pkg::*;
 
   //reg_model package
   import logic_reg_model_pkg::*;

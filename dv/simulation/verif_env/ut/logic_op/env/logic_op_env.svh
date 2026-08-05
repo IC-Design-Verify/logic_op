@@ -9,7 +9,8 @@ class logic_op_env extends uvm_env;
   //------------------------------------------
   // Data Members
   //------------------------------------------
-  apb_shared_cfg apb_cfg;
+  //apb_shared_cfg apb_cfg;
+  apb_agent_config apb_cfg;  
   logic_op_env_config  env_cfg;
 
   //------------------------------------------
@@ -25,7 +26,8 @@ class logic_op_env extends uvm_env;
 
   //agent inst
   op_in_agent  input_agt;
-  apb_basic_env apb_env;
+  //apb_basic_env apb_env;
+  apb_agent apb_env;
   op_out_agent  output_agt;
 
   //virtual sequencer inst
@@ -45,6 +47,8 @@ class logic_op_env extends uvm_env;
   //reg_model inst
   string hdl_path = "logic_op_tb_top.u_logic_op";
   logic_reg_model rgm;
+  reg2apb_adapter reg2apb;
+	uvm_reg_predictor #(apb_seq_item) apb2reg_preditor;
 
 
   //------------------------------------------
@@ -71,11 +75,11 @@ function void logic_op_env::build_phase(uvm_phase phase);
   end
   //vip config get
   if (env_cfg.apb_cfg!=null) begin
-    uvm_config_db#(apb_shared_cfg)::set(this, "apb_env", "cfg", env_cfg.apb_cfg);   
+    uvm_config_db#(apb_agent_config)::set(this, "apb_env", "cfg", env_cfg.apb_cfg);   
   end                                                                                            
   else begin                                                                                     
-    apb_cfg = apb_shared_cfg::type_id::create("apb_cfg", this);                     
-    uvm_config_db#(apb_shared_cfg)::set(this, "apb_env", "cfg", apb_cfg);   
+    apb_cfg = apb_agent_config::type_id::create("apb_cfg", this);                     
+    uvm_config_db#(apb_agent_config)::set(this, "apb_env", "cfg", apb_cfg);   
   end                                                                                            
 
   //set s_env config to s_env
@@ -102,8 +106,12 @@ function void logic_op_env::build_phase(uvm_phase phase);
     rgm.reset();
     rgm.map.set_auto_predict(0);
   end
-  uvm_config_db#(uvm_reg_block)::set(this, "apb_env.apb_master_env.master", "apb_regmodel", rgm);
-          
+  //uvm_config_db#(uvm_reg_block)::set(this, "apb_env.apb_master_env.master", "apb_regmodel", rgm);
+	reg2apb = reg2apb_adapter::type_id::create("reg2apb");
+	reg2apb.provides_responses = 1;
+	apb2reg_preditor = uvm_reg_predictor#(apb_seq_item)::type_id::create("apb2reg_preditor", this);
+	apb2reg_preditor.map = rgm.map;
+	apb2reg_preditor.adapter = reg2apb;          
 
   //sub_env reg_model connect
   //Example:
@@ -129,7 +137,8 @@ function void logic_op_env::build_phase(uvm_phase phase);
     input_agt = op_in_agent::type_id::create("input_agt", this);
   end
   if(env_cfg.has_apb_agt) begin
-    apb_env = apb_basic_env::type_id::create("apb_env", this);
+		uvm_config_db #(apb_agent_config)::set(this, "apb_env", "apb_agent_config", env_cfg.apb_cfg);
+    apb_env = apb_agent::type_id::create("apb_env", this);
   end
   if(env_cfg.has_output_agt) begin
     uvm_config_db #(op_out_agent_config)::set(this, "output_agt", "op_out_agent_config", env_cfg.output_agt_cfg);
@@ -174,6 +183,7 @@ function void logic_op_env::connect_phase(uvm_phase phase);
     logic_op_vseqr.input_seqr = input_agt.seqr;
   end
   if(env_cfg.has_logic_op_vseqr && env_cfg.has_apb_agt == 1) begin
+    logic_op_vseqr.apb_seqr = apb_env.seqr;
   end
   if(env_cfg.has_logic_op_vseqr && env_cfg.has_output_agt == 1 && env_cfg.output_agt_cfg.active == UVM_ACTIVE) begin
     logic_op_vseqr.output_seqr = output_agt.seqr;

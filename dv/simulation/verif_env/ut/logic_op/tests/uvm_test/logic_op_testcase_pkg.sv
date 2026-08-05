@@ -4,9 +4,11 @@ package logic_op_testcase_pkg;
   import uvm_pkg::*;
 
   //vip package
-  import svt_uvm_pkg::*;    
-  import svt_apb_uvm_pkg::*;    
-	import apb_env_pkg::*;
+  //import svt_uvm_pkg::*;    
+  //import svt_apb_uvm_pkg::*;    
+	//import apb_env_pkg::*;
+
+  import apb_agent_pkg::*;
 
   
 
