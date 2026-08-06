@@ -30,19 +30,24 @@
 export PROJ_HOME  := $(shell pwd | sed -e 's/^\(.*\)\/dv\>.*/\1/')
 export LIGHT_ROOT := $(shell pwd | sed -e 's/^\(.*ut\>\).*/\1/')
 
+# ---- Two filelists: DUT (design) and UVM (library + testbench) ------------
+# Full sim must Verilate both together (logic_op_tb_top instantiates the DUT).
+DUT_F    := dut.f
+UVM_F    := uvm.f
+FILELIST := -f $(DUT_F) -f $(UVM_F)
+
 TOP      := logic_op_tb_top
 OBJ_DIR  := obj_dir
 EXE      := $(OBJ_DIR)/V$(TOP)
+
+# Standalone DUT build (DUT-only model library, no testbench).
+DUT_TOP  := logic_op
+DUT_DIR  := obj_dir_dut
 
 UVM_DIR  := $(PROJ_HOME)/uvm-verilator
 UVM_SRC  := $(UVM_DIR)/src
 UVM_DPI  := $(UVM_SRC)/dpi/uvm_dpi.cc          # UVM's own DPI/VPI implementation
 DPI_CPP  := $(LIGHT_ROOT)/logic_op/env/reference_model/logic_op_dpi.cpp  # DUT ref-model DPI
-
-# Verilator build filelist (UVM source + RTL + packages + tb_top, in dep order;
-# deliberately excludes the VCS `logic_op_test` program block -- run_test() is
-# launched from logic_op_tb_top under the -DVL_RUN_TEST guard instead).
-FILELIST := filelist_vlt.f
 
 # ---- Tools -------------------------------------------------------------------
 VERILATOR          ?= verilator
@@ -59,26 +64,26 @@ STDBUF ?= stdbuf -oL
 BASE_FLAGS  = --Mdir $(OBJ_DIR) --top-module $(TOP) --timescale 1ns/1ps
 BASE_FLAGS += -Wall -Wno-fatal
 BASE_FLAGS += -DVL_RUN_TEST -DDEMO_MAKEFILE -DUVM_PACKER_MAX_BYTES=1500000
-BASE_FLAGS += -f $(FILELIST)
+BASE_FLAGS += $(FILELIST)    # FILELIST already contains the -f flags
 
 # --binary = --main --exe --build --timing (auto C++ main + timing for phases)
 BUILD_FLAGS  = --binary -j 16 --vpi --trace-vcd --trace-depth 5
 
 # ---- Targets ----------------------------------------------------------------
-.PHONY: all build uvm run uvm-run wave uvm-wave lint clean uvm-clean help
+.PHONY: all build uvm run uvm-run wave uvm-wave dut lint clean uvm-clean dut-clean help
 
 all: build
 
 help:
-	@echo "logic_op UVM TB on Verilator  (UVM = uvm-verilator/, chipsalliance 1800.2)"
-	@echo "  make                       build (verilate + compile)"
+	@echo "logic_op on Verilator  (UVM = uvm-verilator/, chipsalliance 1800.2)"
+	@echo "  DUT filelist : $(DUT_F)     UVM/TB filelist : $(UVM_F)"
+	@echo "  make                       build DUT+UVM (verilate + compile)"
+	@echo "  make dut                   build DUT only  (standalone model lib)"
 	@echo "  make run [TEST=name]       run a test (default: $(TEST))"
 	@echo "  make wave [TEST=name]      run with +trace -> tb.vcd"
 	@echo "  make lint                  SystemVerilog elaboration check"
 	@echo "  make clean"
-	@echo "  UVM source : $(UVM_DIR)"
-	@echo "  Filelist   : $(FILELIST)"
-	@echo "  Pass-through: make EXTRA='--trace-fst'  (or any verilator options)"
+	@echo "  Pass-through: make EXTRA='--trace-fst'"
 
 build uvm:
 	@mkdir -p logs out
@@ -100,6 +105,19 @@ wave uvm-wave: build
 	@echo "Waveform: tb.vcd"
 
 # Fast SV-only elaboration check (no C++ build).
+# ---- DUT-only build (separate compilation of just the design) --------------
+# Generates a standalone logic_op model library (no testbench, no main).
+# Useful for DUT-only lint / IP-handoff / a future C++ harness.
+dut:
+	@mkdir -p logs
+	@echo "-- VERILATE + BUILD (DUT only, top=$(DUT_TOP), filelist=$(DUT_F)) --"
+	@bash -c 'set -o pipefail; \
+	  $(VERILATOR) --cc --build -j 16 --Mdir $(DUT_DIR) --top-module $(DUT_TOP) \
+	    --timescale 1ns/1ps -Wall -Wno-fatal -f $(DUT_F) $(EXTRA) 2>&1 | tee logs/dut_build.log'
+	@echo
+	@echo "DUT model : $(DUT_DIR)/V$(DUT_TOP).h"
+	@echo "DUT lib   : $(DUT_DIR)/libV$(DUT_TOP).a"
+
 lint:
 	@mkdir -p logs
 	@bash -c 'set -o pipefail; \
@@ -107,3 +125,5 @@ lint:
 
 clean uvm-clean:
 	-rm -rf $(OBJ_DIR) logs/uvm_build.log logs/uvm_run.log logs/lint.log tb.vcd hierarchy.txt out
+dut-clean:
+	-rm -rf $(DUT_DIR) logs/dut_build.log
