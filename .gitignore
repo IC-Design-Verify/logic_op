@@ -1,0 +1,48 @@
+# =============================================================================
+# Build artifacts & generated files  (Verilator + VCS flows)
+# Source under design/ and dv/.../logic_op|common is tracked and never matched.
+# =============================================================================
+
+# ---- Verilator: generated model / executable dirs (any depth) ----
+# obj_dir (full sim), obj_dir_dut (DUT-only), obj_dir_vlt (scripts/vlt.sh)
+obj_dir*/
+
+# ---- Simulation run output ----
+dv/simulation/verif_env/ut/logs/
+dv/simulation/verif_env/ut/out/
+dv/simulation/verif_env/ut/hierarchy.txt
+coverage.dat
+
+# ---- Build caches ----
+.ccache/
+.verilator*/
+
+# ---- Waveforms ----
+*.vcd
+*.fst
+*.fsdb
+
+# ---- VCS artifacts ----
+csrc/
+simv*
+vc_hdrs.h
+verdi*
+ucli*
+novas*
+*.xml
+
+# ---- VCS / sim logs ----
+comp.log
+simv.log
+tr_db.log
+
+# ---- Local UVM source copies (not part of the project; remove these lines
+#      if you ever want to track one of them) ----
+uvm-verilator-bak/
+uvm-verilator-patched/
+
+# ---- Editor / OS ----
+*.swp
+*.swo
+*~
+.DS_Store
