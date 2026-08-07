@@ -52,10 +52,10 @@ class logic_op_env_config extends uvm_object;
 
 
   extern function new(string name="logic_op_env_config");
-  extern virtual function config_env(string name="LOGIC_OP");
+  extern virtual function void config_env(string name="LOGIC_OP");
 
   //vip config function
-  extern virtual function config_apb();
+  extern virtual function void config_apb();
 
 
 endclass: logic_op_env_config
@@ -72,7 +72,7 @@ function logic_op_env_config::new(string name="logic_op_env_config");
         
 endfunction: new
 
-function logic_op_env_config::config_env(string name="LOGIC_OP");
+function void logic_op_env_config::config_env(string name="LOGIC_OP");
   `uvm_info("CONFIG_ENV", "Starting config Environment", UVM_MEDIUM)
 
   //Get Interface To Agent Config
@@ -120,7 +120,7 @@ endfunction
 //  apb_cfg.master_cfg.apb3_enable = 0;
 //
 //endfunction
-function logic_op_env_config::config_apb();
+function void logic_op_env_config::config_apb();
   apb_cfg.start_address[0] = 32'h00000000;
   apb_cfg.range[0] = 32'hffffffff;
 

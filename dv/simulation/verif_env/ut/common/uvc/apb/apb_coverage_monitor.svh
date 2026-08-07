@@ -33,6 +33,11 @@ class apb_coverage_monitor extends uvm_subscriber #(apb_seq_item);
 
 
 //------------------------------------------
+// Component Members
+//------------------------------------------
+apb_seq_item analysis_txn;
+
+//------------------------------------------
 // Cover Group(s)
 //------------------------------------------
 covergroup apb_cov;
@@ -43,11 +48,6 @@ OPCODE: coverpoint analysis_txn.we {
 // To do:
 // Monitor is not returning delay info
 endgroup
-
-//------------------------------------------
-// Component Members
-//------------------------------------------
-apb_seq_item analysis_txn;
 
 //------------------------------------------
 // Methods

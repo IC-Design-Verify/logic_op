@@ -20,7 +20,7 @@
 // $Id: $
 // ***********************************************************************
 #include <svdpi.h>
-extern "C" void logic_op_dpi(int data1, int data2, int sel, int *data) {
+void logic_op_dpi(int data1, int data2, int sel, int *data) {
 
   if(sel==0)
     *data = data1 & data2;
