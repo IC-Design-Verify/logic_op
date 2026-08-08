@@ -57,11 +57,13 @@ TEST   ?= logic_op_smoke_test
 EXTRA  ?=
 STDBUF ?= stdbuf -oL
 
+TIMESCALE = --timescale 1ns/1ps
+
 # ---- Flags (shared by build & lint) -----------------------------------------
 #   -DVL_RUN_TEST            : logic_op_tb_top calls run_test() (no program top)
 #   -DDEMO_MAKEFILE          : enable $dumpfile/$dumpvars in tb_top
 #   -DUVM_PACKER_MAX_BYTES   : match the original VCS Makefile define
-BASE_FLAGS  = --Mdir $(OBJ_DIR) --top-module $(TOP) --timescale 1ns/1ps
+BASE_FLAGS  = --Mdir $(OBJ_DIR) --top-module $(TOP) $(TIMESCALE)
 BASE_FLAGS += -Wall -Wno-fatal
 BASE_FLAGS += -DVL_RUN_TEST -DDEMO_MAKEFILE -DUVM_PACKER_MAX_BYTES=1500000
 BASE_FLAGS += $(FILELIST)    # FILELIST already contains the -f flags
@@ -122,6 +124,9 @@ lint:
 	@mkdir -p logs
 	@bash -c 'set -o pipefail; \
 	  $(VERILATOR) --lint-only $(BASE_FLAGS) $(EXTRA) 2>&1 | tee logs/lint.log'
+
+gui:
+	source ~/.venv/bin/activate; rtlens --filelist filelist_vlt.f --top logic_op_tb_top --wave tb.vcd $(TIMESCALE) ; deactivate
 
 clean uvm-clean:
 	-rm -rf $(OBJ_DIR) logs/uvm_build.log logs/uvm_run.log logs/lint.log tb.vcd hierarchy.txt out
