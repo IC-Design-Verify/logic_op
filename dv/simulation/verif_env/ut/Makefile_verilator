@@ -126,7 +126,8 @@ lint:
 	  $(VERILATOR) --lint-only $(BASE_FLAGS) $(EXTRA) 2>&1 | tee logs/lint.log'
 
 gui:
-	source ~/.venv/bin/activate; rtlens --filelist filelist_vlt.f --top logic_op_tb_top --wave tb.vcd $(TIMESCALE) ; deactivate
+	source ~/.venv/bin/activate; rtlens --filelist filelist_vlt.f --top logic_op_tb_top --wave tb.vcd $(TIMESCALE)
+	deactivate
 
 clean uvm-clean:
 	-rm -rf $(OBJ_DIR) logs/uvm_build.log logs/uvm_run.log logs/lint.log tb.vcd hierarchy.txt out
